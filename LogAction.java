@@ -12,8 +12,10 @@ import java.util.List;
  * @author tommylee
  */
 public class LogAction {
-    private PlayerStat teamx;
+    private PlayerStat targetx;
+    private PlayerStat targety;
     private int[][] teamX;
+    private int stage;
     private int team_scoreA;
     private int team_scoreB;
     private int foul_teamA;
@@ -23,15 +25,8 @@ public class LogAction {
     private int timeoutA,timeoutB;
     private int type;
     private int givenMarks;
-    public LogAction(int[][] teamXx,String team_name,int team_scoreA,int team_scoreB,int foul_scoreA,int foul_scoreB){
-        this.teamX=teamXx;
-        
-        this.team_name=team_name;
-        this.team_scoreA=team_scoreA;
-        this.team_scoreB=team_scoreB;
-      this.foul_teamA=foul_scoreA;
-      this.foul_teamB=foul_scoreB;
-      this.type=1;
+    public LogAction(PlayerStat targetx){
+        this.targetx=targetx;
     }
     public LogAction(String team_name,int timeoutA,int timeoutB,int a,int b)
     {
@@ -40,6 +35,15 @@ public class LogAction {
         this.type=2;
           this.team_scoreA=a;
         this.team_scoreB=b;
+    }
+        public LogAction(PlayerStat a,PlayerStat b)
+    {
+      this.targetx=a;
+      this.targety=b;
+    }
+       public LogAction(int stage)
+    {
+        this.stage=stage;
     }
      public LogAction(String team_name,int timeoutA,int timeoutB,int x,int a,int b)
     {
@@ -57,6 +61,10 @@ public class LogAction {
      }
      public boolean reCheckSub(){
          return checksub;
+     }
+     public PlayerStat getPlayer()
+     {
+         return targetx;
      }
      public int returnGivenMarks(){
          return givenMarks;

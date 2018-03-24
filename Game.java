@@ -4,13 +4,20 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
@@ -20,8 +27,10 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -77,8 +86,8 @@ public class Game extends javax.swing.JFrame implements Runnable{
         int timeout_teamA=0;
         int timeout_teamB=0;
         int seasonx;
-        Stack<LogAction> gameStack;
-        Stack<LogAction> gameStackB;
+        LinkedList<LogAction> gameListA;
+        LinkedList<LogAction> gameListB;
         String lastChangedteam;
         PlayerStat currentSubingPlayer;
         PlayerStat previousSubingPlayer;
@@ -143,8 +152,7 @@ DefaultComboBoxModel sub2=new DefaultComboBoxModel();
     }
     public Game(int teamA_id,int teamB_id,int seasonx,PlayerStat[] firstTeamA,PlayerStat[] firstTeamB)
     {
-        gameStack=new Stack<>();
-        gameStackB=new Stack<>();
+        gameListA=new LinkedList<>();
         t=new Thread(this);
         this.teamA_id=teamA_id;
         this.teamB_id=teamB_id;
@@ -198,6 +206,119 @@ DefaultComboBoxModel sub2=new DefaultComboBoxModel();
                 Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
             }
     }
+    private void exportcsv(){
+        JFileChooser chooser = new JFileChooser();
+            int retrival = chooser.showSaveDialog(null);
+                if (retrival == JFileChooser.APPROVE_OPTION) {
+                   try{
+                       File fp=new File(chooser.getSelectedFile()+".csv");
+                        if ( fp.exists() ) {
+           String msg = "檔案 \"{0}\" 已存在!\n要進行覆蓋?";
+           msg = MessageFormat.format( msg, new Object[] { fp.getName() } );
+           String title = chooser.getDialogTitle();
+           int option = JOptionPane.showConfirmDialog( this, msg, title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
+           if ( option == JOptionPane.NO_OPTION ) {
+           return;
+           } // end if
+           } // end if
+          OutputStreamWriter bw=new OutputStreamWriter(new FileOutputStream(fp), StandardCharsets.UTF_8);
+          bw.write('\uFEFF');
+          bw.write("參賽隊:,"+teamA_name+"\n");
+            String colx[] = {"Name","No","PTS", "2 Points FG", "FGA","%","3 Points FG","FGA","%","Free throw FG"
+             ,"FGA","%","OR","DR","TR","BS","AS","ST","TO","F","EFF"};
+            bw.write("\n");
+          for(int b=0;b<colx.length;b++)
+           bw.write(colx[b]+",");
+          bw.write("\n");
+           int []temp=new int[17];
+           int eff;
+           
+         for(int x=0;x<teamA.size();x++)
+         {
+            bw.write(teamA.get(x).getPlayerName()+","+teamA.get(x).getPlayerNum()+",");
+                  
+            eff=(teamA.get(x).getOptions(0)*2+teamA.get(x).getOptions(2)*3+teamA.get(x).getOptions(4)*1)+teamA.get(x).getOptions(6)+teamA.get(x).getOptions(7)+teamA.get(x).getOptions(10)+teamA.get(x).getOptions(11)+teamA.get(x).getOptions(12)-(teamA.get(x).getOptions(1)-teamA.get(x).getOptions(0))-(teamA.get(x).getOptions(3)-teamA.get(x).getOptions(2))-(teamA.get(x).getOptions(5)-teamA.get(x).getOptions(4))-teamA.get(x).getOptions(13);
+                
+        temp [0]= teamA.get(x).getOptions(0)*2+teamA.get(x).getOptions(2)*3+teamA.get(x).getOptions(4)*1;
+        temp [1]= teamA.get(x).getOptions(0);
+        temp [2]= teamA.get(x).getOptions(1);
+        //percent 100 2point
+        temp [3]= teamA.get(x).getOptions(2);
+        temp [4]= teamA.get(x).getOptions(3);
+        //percent 100 3point
+        temp [5]= teamA.get(x).getOptions(4);
+        temp [6]= teamA.get(x).getOptions(5);
+        //free throw
+        temp [7]= teamA.get(x).getOptions(6);
+        temp [8]= teamA.get(x).getOptions(7);
+        //robound total
+        temp [9]=teamA.get(x).getOptions(10);
+        temp [10]=teamA.get(x).getOptions(11);
+        temp [11]=teamA.get(x).getOptions(12);
+        temp [12]=teamA.get(x).getOptions(13);
+        temp [13]=teamA.get(x).getOptions(14);
+        temp[14]=teamA.get(x).getOptions(15);
+        temp[15]=teamA.get(x).getOptions(16);
+        temp [16]=eff;
+                      double percent2point,percent3point,freethrowpoint;
+                   percent2point=(temp[2]==0)?0:((double)temp[1])/(int)temp[2];
+                  percent3point=(temp[4]==0)?0:((double)temp[3])/(int)temp[4];
+                  freethrowpoint=(temp[6]==0)?0:((double)temp[5])/(int)temp[6];   
+             bw.write(temp[0]+","+temp[1]+","+temp[2]+","+(percent2point*100)+"%"+","+temp[3]+","+temp[4]+","+percent3point*100+"%"+
+             ","+temp[5]+","+temp[6]+","+(freethrowpoint*100)+"%"+","+temp [7]+","+temp [8]+","+(temp [7]+temp [8])+","+
+             temp[9]+","+temp[10]+","+temp[11]+","+temp[12]+","+(temp[13]+temp[14]+temp[15])+","+eff);
+             bw.write("\n");
+         }
+         bw.write("\n參賽隊:,"+teamB_name+"\n");
+                   bw.write("\n");
+          for(int b=0;b<colx.length;b++)
+           bw.write(colx[b]+",");
+          bw.write("\n");
+         for(int x=0;x<teamB.size();x++)
+         {
+            bw.write(teamB.get(x).getPlayerName()+","+teamB.get(x).getPlayerNum()+",");
+                  
+            eff=(teamB.get(x).getOptions(0)*2+teamB.get(x).getOptions(2)*3+teamB.get(x).getOptions(4)*1)+teamB.get(x).getOptions(6)+teamB.get(x).getOptions(7)+teamB.get(x).getOptions(10)+teamB.get(x).getOptions(11)+teamB.get(x).getOptions(12)-(teamB.get(x).getOptions(1)-teamB.get(x).getOptions(0))-(teamB.get(x).getOptions(3)-teamB.get(x).getOptions(2))-(teamB.get(x).getOptions(5)-teamB.get(x).getOptions(4))-teamB.get(x).getOptions(13);
+                
+        temp [0]= teamB.get(x).getOptions(0)*2+teamB.get(x).getOptions(2)*3+teamB.get(x).getOptions(4)*1;
+        temp [1]= teamB.get(x).getOptions(0);
+        temp [2]= teamB.get(x).getOptions(1);
+        //percent 100 2point
+        temp [3]= teamB.get(x).getOptions(2);
+        temp [4]= teamB.get(x).getOptions(3);
+        //percent 100 3point
+        temp [5]= teamB.get(x).getOptions(4);
+        temp [6]= teamB.get(x).getOptions(5);
+        //free throw
+        temp [7]= teamB.get(x).getOptions(6);
+        temp [8]= teamB.get(x).getOptions(7);
+        //robound total
+        temp [9]=teamB.get(x).getOptions(10);
+        temp [10]=teamB.get(x).getOptions(11);
+        temp [11]=teamB.get(x).getOptions(12);
+        temp [12]=teamB.get(x).getOptions(13);
+        temp [13]=teamB.get(x).getOptions(14);
+        temp[14]=teamB.get(x).getOptions(15);
+        temp[15]=teamB.get(x).getOptions(16);
+        temp [16]=eff;
+                      double percent2point,percent3point,freethrowpoint;
+                   percent2point=(temp[2]==0)?0:((double)temp[1])/(int)temp[2];
+                  percent3point=(temp[4]==0)?0:((double)temp[3])/(int)temp[4];
+                  freethrowpoint=(temp[6]==0)?0:((double)temp[5])/(int)temp[6];   
+             bw.write(temp[0]+","+temp[1]+","+temp[2]+","+(percent2point*100)+"%"+","+temp[3]+","+temp[4]+","+percent3point*100+"%"+
+             ","+temp[5]+","+temp[6]+","+(freethrowpoint*100)+"%"+","+temp [7]+","+temp [8]+","+(temp [7]+temp [8])+","+
+             temp[9]+","+temp[10]+","+temp[11]+","+temp[12]+","+(temp[13]+temp[14]+temp[15])+","+eff);
+             bw.write("\n");
+         }
+           bw.close();
+                   }
+                   catch(Exception e)
+                   {
+                       
+                   }
+                }
+                
+    }
     private void initializeSortedPlayerFirstTeam(PlayerStat[] sortTeamX,PlayerStat[] firstTeamX){
         try{
         for(PlayerStat x:firstTeamX)
@@ -237,9 +358,13 @@ DefaultComboBoxModel sub2=new DefaultComboBoxModel();
              default:
                  break;
          }
-                     addLog(stage,timelabel.getText(),teamA_name,"<->"+firstTeamA[f].getPlayerNum()+" "+firstTeamA[f].getPlayerName(),25);
-                    LogAction e=new LogAction();
-                          gameStack.clear();
+                     addLog(stage,timelabel.getText(),teamA_name,previoussub.getPlayerNum()+" "+previoussub.getPlayerName()+"-"+firstTeamA[f].getPlayerNum()+" "+firstTeamA[f].getPlayerName(),25);
+                 
+    
+                    LogAction e=new LogAction(previoussub,firstTeamA[f]);
+                    gameListA.push(e);
+                    //WARNING
+                       
                }
             }   
              
@@ -274,10 +399,14 @@ case 4:
                  default:
                      break;
              }
-                     addLog(stage,timelabel.getText(),teamB_name,"<->"+firstTeamB[f].getPlayerNum()+" "+firstTeamB[f].getPlayerName(),25);
-                    LogAction e=new LogAction();
+                 addLog(stage,timelabel.getText(),teamB_name,previoussub.getPlayerNum()+" "+previoussub.getPlayerName(),25);
+                     addLog(stage,timelabel.getText(),teamB_name,firstTeamB[f].getPlayerNum()+" "+firstTeamB[f].getPlayerName(),26);
+                     LogAction e=new LogAction(previoussub);
+                    gameListA.push(e);
+                    e=new LogAction(firstTeamA[f]);
+                    gameListA.push(e);
                
-        gameStackB.clear();
+       
                }
             }   
              
@@ -286,6 +415,7 @@ case 4:
      }
   
     }
+    
     private void rightClickButtonAction(JButton playerX,PlayerStat y,String teamX)
     {
         //checkpoint
@@ -343,11 +473,28 @@ case 4:
         if(x.getFirstTeamX())playerX.setBackground(new java.awt.Color(39, 139, 54));
     }
     private void endgame(){
-        
+        int p=1;
         for(int x=0;x<teamA.size();x++)
-        db.insertStat(teamA.get(x),teamA_name,teamB_name);
+        {
+            p=db.insertStat(teamA.get(x),teamA_name,teamB_name);
+              if(p==-1) { 
+            final JPanel panel = new JPanel();
+            JOptionPane.showMessageDialog(panel, "網路連線失敗", "Warning",
+        JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        }
         for(int x=0;x<teamB.size();x++)
-        db.insertStat(teamB.get(x),teamA_name,teamB_name);
+        {
+            p=db.insertStat(teamB.get(x),teamA_name,teamB_name);
+                if(p==-1) { 
+            final JPanel panel = new JPanel();
+            JOptionPane.showMessageDialog(panel, "網路連線失敗", "Warning",
+        JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        }
+
     }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -464,6 +611,7 @@ case 4:
       plus1B = new javax.swing.JButton();
       minus1B = new javax.swing.JButton();
       jButton2 = new javax.swing.JButton();
+      addSec=new javax.swing.JButton();
       jButton3 = new javax.swing.JButton();
       addMilliSecond = new javax.swing.JButton();
       minusMilliSecond = new javax.swing.JButton();
@@ -497,6 +645,7 @@ case 4:
       teamAPlayer13 = new javax.swing.JButton();
       teamAPlayer14 = new javax.swing.JButton();
       teamAPlayer15 = new javax.swing.JButton();
+      minusSec=new javax.swing.JButton();
               jLabel8.setText("暫停");
 
       setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -633,9 +782,19 @@ case 4:
 
       log.setModel(logtable);
       jScrollPane2.setViewportView(log);
-
+            final RowPopup pop=new RowPopup(log);
+        log.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                    if(SwingUtilities.isRightMouseButton(evt)){
+                        log.setRowSelectionInterval(log.rowAtPoint(evt.getPoint()), log.rowAtPoint(evt.getPoint()));
+                       
+             pop.show(evt.getComponent(), evt.getX(), evt.getY());
+        }
+            }
+        });
       getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 560, 690, 190));
-
+     
       int countera=1;
       for(PlayerStat x:teamA)
       {
@@ -1256,7 +1415,7 @@ case 4:
       getContentPane().add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(1210, 0, 140, 50));
 
       Rewind.setIcon(new javax.swing.ImageIcon(getClass().getResource("/reply.png"))); // NOI18N
-      Rewind.setText("上一步");
+      Rewind.setText("取消步驟");
       Rewind.addActionListener(new java.awt.event.ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent evt) {
               RewindActionPerformed(evt);
@@ -1500,7 +1659,21 @@ case 4:
           }
       });
       getContentPane().add(minus1B, new org.netbeans.lib.awtextra.AbsoluteConstraints(820, 230, 80, 40));
+      addSec.setText("+1秒");
+      addSec.addActionListener(new java.awt.event.ActionListener() {
+          public void actionPerformed(java.awt.event.ActionEvent evt) {
+             addSecActionPerformed(evt);
+          }
+      });     
 
+      getContentPane().add(addSec, new org.netbeans.lib.awtextra.AbsoluteConstraints(1130, 60, 80, 40));  
+             minusSec.setText("-1秒");
+      minusSec.addActionListener(new java.awt.event.ActionListener() {
+          public void actionPerformed(java.awt.event.ActionEvent evt) {
+             minusSecActionPerformed(evt);
+          }
+      });
+      getContentPane().add(minusSec, new org.netbeans.lib.awtextra.AbsoluteConstraints(1130, 110, 80, 40));
       jButton2.setText("+1局");
       jButton2.addActionListener(new java.awt.event.ActionListener() {
           public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1733,12 +1906,15 @@ case 4:
 
       stageTable.setModel(stageX);
       stageTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+      
+
+              
       jScrollPane4.setViewportView(stageTable);
 
       jScrollPane5.setViewportView(jScrollPane4);
 
       getContentPane().add(jScrollPane5, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 60, 260, 130));
-
+   
       teamAPlayer11.setBackground(new java.awt.Color(0, 153, 153));
       teamAPlayer11.setFont(new java.awt.Font("Lucida Grande", Font.BOLD, 12)); // NOI18N
       teamAPlayer11.setForeground(new java.awt.Color(255, 255, 255));
@@ -1849,7 +2025,7 @@ case 4:
           }
       });
       getContentPane().add(teamAPlayer15, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 510, 35,35));
-
+  
       pack();
   }// </editor-fold>                        
   
@@ -3076,252 +3252,142 @@ case 4:
         pack();
     }// </editor-fold>//GEN-END:initComponents
   */ 
+ 
     private void reverseteamAction()
     {
-        
-       String tempname=logtable.getValueAt(logtable.getRowCount()-1, 2).toString();
-       int typerewind;
-      System.out.println("siz:"+gameStack.size());
-      try{
-         if(gameStack.size()==1&&logtable.getValueAt(logtable.getRowCount()-2,4).equals("換人")){
-            return;
-         }
-      if(gameStack.lastElement().reCheckSub()==true){
-          gameStack.pop();
-          return;
-      }
-      }catch(Exception e){
-           if(gameStackB.size()==1&&logtable.getValueAt(logtable.getRowCount()-2,4).equals("換人")){
-            return;
-         }
-          if(gameStackB.lastElement().reCheckSub()==true){
-          gameStackB.pop();
-          return;
-      }
-      }
-      LogAction finale;
-             if(tempname.equals(teamA_name))
-    {
+        int tmp=gameListA.size()-log.getSelectedRow()-1;
+        String teamname=log.getValueAt(log.getSelectedRow(), 2).toString();
+     switch(log.getValueAt(log.getSelectedRow(), 4).toString())
+     {
+         case "投籃":
+            switch(log.getValueAt(log.getSelectedRow(), 5).toString())
+            {
+                case "兩分命中":
+                 System.out.print("inex:"+gameListA.get(log.getSelectedRow()).getPlayer().getPlayerName());
+                 gameListA.get(tmp).getPlayer().setReverseOptions(0);
 
-       finale=gameStack.pop();
-       typerewind=finale.getType();
-           switch (finale.getType()) {
-               case 1:
-                   try{
-                       for(int p=0;p<sortTeamA.length;p++)
-                       {
-                           
-                           for(int x=0;x<18;x++)
-                           {
-                               
-                               if(gameStack.lastElement().getTeam()[p][x]!=sortTeamA[p].getOptions(x))
-                               {
-                                   
-                                   sortTeamA[p].statistics[x]=gameStack.lastElement().getTeam()[p][x];
-                               }
-                           }
-                           System.out.println("");
-                       }
-                   }
-                   catch(Exception e)
-                   {
-                       
-                       for(int p=0;p<sortTeamA.length;p++)
-                       {
-                           for(int x=0;x<18;x++)
-                           {
-                            
-                               sortTeamA[p].statistics[x]=0;
-                           }
-                       }
-                   }           break;
-           // last stack is timeout
-               case 2:
-                   timeoutA.setText(String.valueOf(--timeout_teamA));
-                   break;
-               case 3:
-                   score_teamA-=finale.returnGivenMarks();
-                   break;
-               default:
-                   break;
-           }
-        reloadTable(teamAstatTable,tableModela,teamA);
-    }
-             else
-             {
-                finale= gameStackB.pop();
-                typerewind=finale.getType();
-           switch (finale.getType()) {
-               case 1:
-                   try{
-                    
-                       for(int p=0;p<sortTeamB.length;p++)
-                       {
-                           
-                           for(int x=0;x<18;x++)
-                           {
-                               
-                               if(gameStackB.lastElement().getTeam()[p][x]!=sortTeamB[p].getOptions(x))
-                               {
-                                   
-                                   sortTeamB[p].statistics[x]=gameStackB.lastElement().getTeam()[p][x];
-                                   
-                               }
-                           }
-                           System.out.println("");
-                       }
-                   }
-                   catch(Exception e)
-                   {
-                      
-                       for(int p=0;p<sortTeamB.length;p++)
-                       {
-                           for(int x=0;x<18;x++)
-                           {
-                               
-                               sortTeamB[p].statistics[x]=0;
-                           }
-                       }
-                   } break;
-               case 2:
-                   timeoutB.setText(String.valueOf(--timeout_teamB));
-                   break; 
-               case 3:
-                   score_teamB-=finale.returnGivenMarks();
-                   break;
-               default:
-                   break;
-           }
-        reloadTable(teamBstatTable,tableModelb,teamB);
-             }
-         try{
-             
-             if(typerewind==1){
-               System.out.println(gameStack.lastElement().getScoreteamA()+" "+gameStack.lastElement().getScoreteamB());  
-score_teamA=gameStack.lastElement().getScoreteamA();
-score_teamB=gameStack.lastElement().getScoreteamB();
-foul_teamA=gameStack.lastElement().getFoulteamA();
-foul_teamB=gameStackB.lastElement().getFoulteamB();
-           
-if(stage==1)
-{
-
-     teamAstagescore.set(stage, score_teamA);
-     teamBstagescore.set(stage, score_teamB);
-}
-int atemp,btemp;
-for(int x=stage-1;x>=1;x--)
-{
-    atemp=score_teamA-(int)stageX.getValueAt(0, x);
-    
- teamAstagescore.set(stage, atemp);
-}
-for(int x=stage-1;x>=1;x--)
-{
-    btemp=score_teamB-(int)stageX.getValueAt(1, x);
- teamBstagescore.set(stage, btemp);
-}
-  }
-             else if (typerewind==3)
-             {
-                 if(stage==1){
-                     teamAstagescore.set(stage, score_teamA);
-                    teamBstagescore.set(stage, score_teamB);
+                 generalReverseAction(0,teamname);
+                 break;
+                case "兩分失誤":
+                 gameListA.get(tmp).getPlayer().setReverseOptions(1);
+                 break;
+                case "三分命中":
+                 gameListA.get(tmp).getPlayer().setReverseOptions(2);
+                  
+                 generalReverseAction(2,teamname);
+                 break;
+                case "三分失誤":
+                 gameListA.get(tmp).getPlayer().setReverseOptions(3);
+                 break;
+            }
+            break;
+            case "罰球":
+                 switch(log.getValueAt(log.getSelectedRow(), 5).toString())
+            {
+               case "罰球命中":
+             gameListA.get(tmp).getPlayer().setReverseOptions(4);
+             generalReverseAction(4,teamname);
+             break;
+               case "罰球失誤":
+             gameListA.get(tmp).getPlayer().setReverseOptions(5);
+             break;
+            }
+                 break;
+            case "進攻籃板":
+             gameListA.get(tmp).getPlayer().setReverseOptions(6);
+                break;
+            case "防守籃板":
+             gameListA.get(tmp).getPlayer().setReverseOptions(7);
+                break;
+            case "快攻":
+                 switch(log.getValueAt(log.getSelectedRow(), 5).toString())
+                 {
+                     case "成功":
+                    gameListA.get(tmp).getPlayer().setReverseOptions(8);
+                     break;
+                     case "失敗":
+                    gameListA.get(tmp).getPlayer().setReverseOptions(9);
+                     break;
                  }
-                 int atemp,btemp;
-                 for(int x=stage-1;x>=1;x--)
-        {   
-    atemp=score_teamA-(int)stageX.getValueAt(0, x);
- teamAstagescore.set(stage, atemp);
-}
-for(int x=stage-1;x>=1;x--)
-{
-    btemp=score_teamB-(int)stageX.getValueAt(1, x);
- teamBstagescore.set(stage, btemp);
-}
-             }
-         }
-         catch(Exception e)
-         {
-             if(tempname.equals(teamA_name))
-             {
-             score_teamA=0;foul_teamA=0;
-       if(stage==1)
-{
+                break;
+            case "蓋帽":
+                gameListA.get(tmp).getPlayer().setReverseOptions(10);
+                break;
+            case "助攻":
+                gameListA.get(tmp).getPlayer().setReverseOptions(11);
+                break;
+            case "搶斷":
+                gameListA.get(tmp).getPlayer().setReverseOptions(12);
+                break;
+            case "失誤":
+                gameListA.get(tmp).getPlayer().setReverseOptions(13);
+                break;
+            case "進攻犯規":
+                gameListA.get(tmp).getPlayer().setReverseOptions(14);
+                generalReverseAction(14,teamname);
+                break;
+            case "防守犯規":
+                gameListA.get(tmp).getPlayer().setReverseOptions(15);
+                generalReverseAction(15,teamname);
+                break;
+            case "技術犯規":
+                gameListA.get(tmp).getPlayer().setReverseOptions(16);
+                generalReverseAction(16,teamname);
+                break;
+            case "暫停":
+               
+                generalReverseAction(19,teamname);
+                break;
+            case "補分":
+                switch(log.getValueAt(log.getSelectedRow(), 5).toString())
+                {
+                    case "+1":
+                    
+                    generalReverseAction(20,teamname);
+                    break;
+                    case "-1":
+                    
+                    generalReverseAction(21,teamname);
+                    break; 
+                }
+                break;
+            case "局數":
+                switch(log.getValueAt(log.getSelectedRow(), 5).toString())
+                {
+                    case "+1":
+                    
+                    generalReverseAction(30,teamname);
+                    break;
+                    case "-1":
 
-     teamAstagescore.set(stage, score_teamA);
-     teamBstagescore.set(stage, score_teamB);
-}
-             }
-             if(tempname.equals(teamB_name))
-             {
-             foul_teamB=0;score_teamB=0;
-        if(stage==1)
-{
-
-     teamAstagescore.set(stage, score_teamA);
-     teamBstagescore.set(stage, score_teamB);
-}
-             }
-         }
-setGeneralTrace(typerewind,finale);
+                    generalReverseAction(31,teamname);
+                    break; 
+                }
+                break;
+     }
+     gameListA.remove(tmp);
+     if(teamname.equals(teamA_name))
+     {
+         
+         reloadTable(teamAstatTable,tableModela,teamA);
+     }
+     else
+     {
+         reloadTable(teamBstatTable,tableModelb,teamB);
+     }
+     removeTableRow();
     }
     private void setGeneralTrace(int type,LogAction b)
     {
-        switch(type){
-            case 1:
-        int tema=0,temb=0;
-        for(int a=0;a<teamAstatTable.getRowCount();a++)
-        {
-            System.out.print(teamAstatTable.getValueAt(a,3)+",");
-        tema+=(int)teamAstatTable.getValueAt(a,3);
-        }
-        for(int a=0;a<teamBstatTable.getRowCount();a++)
-        {
-        temb+=(int)teamBstatTable.getValueAt(a,3);
-         System.out.println(teamBstatTable.getValueAt(a,3)+",");
-        }
-        score_teamA=tema;
-        score_teamB=temb;
-                        int atemp,btemp;
-   for(int x=stage-1;x>=1;x--)
-{   
-    atemp=score_teamA-(int)stageX.getValueAt(0, x);
- teamAstagescore.set(stage, atemp);
-}
-for(int x=stage-1;x>=1;x--)
-{
-    btemp=score_teamB-(int)stageX.getValueAt(1, x);
- teamBstagescore.set(stage, btemp);
-}
-        break;
-            case 3:
-                try{
-                    if(gameStack.lastElement().getTeamName().equals(teamA_name))
-                score_teamA-=gameStack.lastElement().returnGivenMarks();
-                    else
-                score_teamB-=gameStack.lastElement().returnGivenMarks();
-                }catch(Exception e)
-                {
-                    
-                }
-                break;
-    }
-        teamAscore.setText(String.valueOf(score_teamA));
-        teamBscore.setText(String.valueOf(score_teamB));
-        foulteamA.setText(String.valueOf(foul_teamA));
-        foulteamB.setText(String.valueOf(foul_teamB));
-    
-     stageX.removeRow(0);
-     stageX.removeRow(0);
-     
-        stageX.addRow(teamAstagescore.toArray());
-       stageX.addRow(teamBstagescore.toArray());
-       removeTableRow();
+        
     }
     private void removeTableRow()
     {
-        logtable.removeRow(logtable.getRowCount()-1);
+        System.out.println("row"+logtable.getRowCount());
+        int rowtmp=log.getSelectedRow();
+        logtable.removeRow(rowtmp);
+        log.setRowSelectionInterval(rowtmp-1,rowtmp-1);
+        
     }
     private void addLog(int stage,String time,String team,String player,int options)
     {
@@ -3371,7 +3437,13 @@ for(int x=stage-1;x>=1;x--)
             event="補分";
             break;
             case 25:
-                event="換人";
+                event="換出";
+                break;
+            case 26:
+                event="換入";
+                break;
+            case 30:case 31:
+                event="局數";
                 break;
         }
         switch(options)
@@ -3388,6 +3460,8 @@ for(int x=stage-1;x>=1;x--)
             case 21:eventresult="-1";break;
             case 22:eventresult="+3";break;
             case 23:eventresult="-3";break;
+            case 30:eventresult="+1";break;
+            case 31:eventresult="-1";break;
             default:eventresult="-";break;
         }
         Object[] eventlog={stage,time,team,player,event,eventresult};
@@ -3402,8 +3476,9 @@ for(int x=stage-1;x>=1;x--)
         int counter=1;
           for(PlayerStat x:teamx)
         {
-            
-            Object[] objs = {counter++,x.playerNum,x.playerName,x.getOptions(17),x.getOptions(11),x.getOptions(6)+x.getOptions(7),x.getOptions(14)+x.getOptions(15)+x.getOptions(16)};
+           
+            Object[] objs = {x.playerNum,x.playerName,x.getOptions(17),x.getOptions(11),x.getOptions(6)+x.getOptions(7),x.getOptions(14)+x.getOptions(15)+x.getOptions(16)};
+             
             model.addRow(objs);
         }
         table.setModel(model);
@@ -3508,9 +3583,7 @@ for(int x=stage-1;x>=1;x--)
         options=0;
         notification.setText("兩分球命中－請選擇球員");
     }//GEN-LAST:event_options0ActionPerformed
-    private void stageTableOpera(){
-      
-    }
+
     private int[] generalAction(int option,String referteam)
     {
          int general[]=new int[3];
@@ -3578,7 +3651,23 @@ if(referteam.equals(teamA_name))
                 stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
                 teamAscore.setText(String.valueOf(score_teamA));
                 break;
-            
+                      case 30:
+            stageX.setValueAt(score_teamA, 0, stage);
+            stageX.setValueAt(score_teamB, 1, stage);
+            stage++;
+            stageLabel.setText(String.valueOf(stage));
+            if(stage>4){
+                stageX.addColumn("局 "+stage);
+                stageX.setValueAt(0, 0, stage);
+                stageX.setValueAt(0, 1, stage);
+                teamAstagescore.add(0);
+                teamBstagescore.add(0);
+             }
+              break;
+                      case 31:
+                stage--;
+                stageLabel.setText(String.valueOf(stage));
+                break;
         }
         general[0]=score_teamA;general[1]=foul_teamA;general[2]=timeout_teamA;
     }
@@ -3640,6 +3729,182 @@ else
                 stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
                 teamBscore.setText(String.valueOf(score_teamB));
                 break;
+                
+                 case 30:
+            stageX.setValueAt(score_teamA, 0, stage);
+            stageX.setValueAt(score_teamB, 1, stage);
+            stage++;
+            stageLabel.setText(String.valueOf(stage));
+            if(stage>4){
+                stageX.addColumn("局 "+stage);
+                stageX.setValueAt(0, 0, stage);
+                stageX.setValueAt(0, 1, stage);
+                teamAstagescore.add(0);
+                teamBstagescore.add(0);
+             }
+              break;
+                      case 31:
+                stage--;
+                stageLabel.setText(String.valueOf(stage));
+                break;
+        }
+      general[0]=score_teamB;general[1]=foul_teamB;general[2]=timeout_teamB;
+}
+   return general;             
+    }
+ private int[] generalReverseAction(int option,String referteam)
+    {
+         int general[]=new int[3];
+if(referteam.equals(teamA_name))
+    {
+        //general[0]=score_teamA,general[1]=foul_teamA
+       
+        switch(option)
+        {
+            case 0:
+                score_teamA-=2;
+                
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)-2);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                
+                break;
+            case 2:
+                score_teamA-=3;
+                 
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)-3);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+            case 4:
+                score_teamA-=1;
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)-1);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+            case 14:case 15:case 16:
+                foul_teamA-=1;
+                foulteamA.setText(String.valueOf(foul_teamA));
+                break;
+            case 19:
+                  timeout_teamA-=1;
+                 
+        timeoutA.setText(String.valueOf(timeout_teamA));
+        break;
+        case 20:
+             score_teamA-=1;
+                
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)-1);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+              case 21:
+             score_teamA+=1;
+                
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)+1);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+                      case 22:
+             score_teamA-=3;
+                
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)-3);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+               case 23:
+             score_teamA+=3;
+                
+                teamAstagescore.set(stage, (int)teamAstagescore.get(stage)+3);
+                stageX.setValueAt(teamAstagescore.get(stage), 0, stage);
+                teamAscore.setText(String.valueOf(score_teamA));
+                break;
+               case 30:
+                stage--;
+                stageLabel.setText(String.valueOf(stage));
+                t.suspend();
+                resetTimer();
+                break;
+               case 31:
+                stage++;
+                stageLabel.setText(String.valueOf(stage));
+                t.suspend();
+                resetTimer();
+                break;
+            
+        }
+        general[0]=score_teamA;general[1]=foul_teamA;general[2]=timeout_teamA;
+    }
+else 
+{
+     switch(option)
+        {
+            case 0:
+                score_teamB-=2;
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)-2);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+            case 2:
+                score_teamB-=3;
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)-3);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+            case 4:
+                score_teamB-=1;
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)-1);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+            case 14:case 15:case 16:
+                foul_teamB-=1;
+                foulteamB.setText(String.valueOf(foul_teamB));
+                break;
+            case 19:
+              timeout_teamB-=1;
+        timeoutB.setText(String.valueOf(timeout_teamB));
+        break;
+         case 20:
+             score_teamB-=1;
+                
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)-1);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+              case 21:
+             score_teamB+=1;
+                
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)+1);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+                      case 22:
+             score_teamB-=3;
+                
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)-3);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+             case 23:
+             score_teamA+=3;
+                
+                teamBstagescore.set(stage, (int)teamBstagescore.get(stage)+3);
+                stageX.setValueAt(teamBstagescore.get(stage), 1, stage);
+                teamBscore.setText(String.valueOf(score_teamB));
+                break;
+             case 30:
+                stage--;
+                stageLabel.setText(String.valueOf(stage));
+                t.suspend();
+                resetTimer();
+                break;
+               case 31:
+                stage++;
+                stageLabel.setText(String.valueOf(stage));
+                t.suspend();
+                resetTimer();
+                break;
         }
       general[0]=score_teamB;general[1]=foul_teamB;general[2]=timeout_teamB;
 }
@@ -3650,7 +3915,7 @@ else
     }
     private void teamPlayAction(PlayerStat teamx,List<PlayerStat> teamX,javax.swing.JTable table,DefaultTableModel model)
 {
-    
+            System.out.println(options);
               teamx.setOptions(options);
         
           
@@ -3667,19 +3932,15 @@ else
           }
           tableModela.fireTableDataChanged();
           generalAction(options,teamx.getTeam());
-          System.out.print("YO:"+teamx.getTeam());
+          System.out.print("YO:"+teamx.getPlayerName());
     
           
-          LogAction currentAction=new LogAction(saveOptionsval,teamx.getTeam(),score_teamA,score_teamB,foul_teamA,foul_teamB);
-           if(  teamx.getTeam().equals(teamA_name))
-          gameStack.push(currentAction);
-           
-          if(  teamx.getTeam().equals(teamB_name))
-              
-               gameStackB.push(currentAction);
-  
+          LogAction logact=new LogAction(teamx);
+          gameListA.push(logact);
+          System.out.println("sizee:"+gameListA.size());
           reloadTable(table,model,teamX);
           addLog(stage,timelabel.getText(),teamx.getTeam(),teamx.getPlayerNum()+" "+teamx.getPlayerName(),options);
+          
 }
     private void teamAPlayer2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_teamAPlayer2ActionPerformed
         // TODO add your handling code here:
@@ -4115,9 +4376,17 @@ if (selectedOption == JOptionPane.YES_OPTION) {
      endgame(); 
  
 }
+    int gameselectedOption = JOptionPane.showConfirmDialog(null, 
+                                  "匯出本場數據(excel)?", 
+                                  "Choose", 
+                                  JOptionPane.YES_NO_OPTION);
+    if (gameselectedOption == JOptionPane.YES_OPTION) {
+     exportcsv(); 
+}
 int selectedOption2 = JOptionPane.showConfirmDialog(null, 
                                   "回到主目錄?", 
                                   "Choose",   JOptionPane.YES_NO_OPTION); 
+
   if (selectedOption2 == JOptionPane.YES_OPTION) {
   this.setVisible(false);
          try {
@@ -4141,7 +4410,7 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
         // TODO add your handling code here:
         generalAction(19,teamB_name);
         LogAction tmp=new LogAction(teamB_name,timeout_teamA,timeout_teamB,score_teamA,score_teamB);
-        gameStackB.add(tmp);
+        gameListA.add(tmp);
         addLog(stage,timelabel.getText(),teamB_name,"-",19);
         pauseAndresumeTimer();
     }//GEN-LAST:event_TimeoutTeamBActionPerformed
@@ -4150,7 +4419,7 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
         // TODO add your handling code here:
         generalAction(19,teamA_name);
         LogAction tmp=new LogAction(teamA_name,timeout_teamA,timeout_teamB,score_teamA,score_teamB);
-        gameStack.add(tmp);
+        gameListA.add(tmp);
         addLog(stage,timelabel.getText(),teamA_name,"-",19);
         pauseAndresumeTimer();
     }//GEN-LAST:event_TimeoutTeamAActionPerformed
@@ -4173,7 +4442,7 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
          generalAction(20,teamA_name);
            addLog(stage,timelabel.getText(),teamA_name,"-",20);
            LogAction tmp=new LogAction(teamA_name,(int)teamAstagescore.get(stage),(int)teamBstagescore.get(stage),i,score_teamA,score_teamB);
-           gameStack.add(tmp);
+           gameListA.push(tmp);
     }//GEN-LAST:event_plus1AActionPerformed
 
     private void minus1AActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_minus1AActionPerformed
@@ -4182,7 +4451,7 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
          generalAction(21,teamA_name);
          addLog(stage,timelabel.getText(),teamA_name,"-",21);
          LogAction tmp=new LogAction(teamA_name,(int)teamAstagescore.get(stage),(int)teamBstagescore.get(stage),i,score_teamA,score_teamB);
-           gameStack.add(tmp);
+           gameListA.push(tmp);
     }//GEN-LAST:event_minus1AActionPerformed
 
     private void plus1BActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plus1BActionPerformed
@@ -4191,7 +4460,7 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
          generalAction(20,teamB_name);
          addLog(stage,timelabel.getText(),teamB_name,"-",20);
          LogAction tmp=new LogAction(teamB_name,(int)teamBstagescore.get(stage),(int)teamBstagescore.get(stage),i,score_teamA,score_teamB);
-           gameStackB.add(tmp);
+           gameListA.push(tmp);
     }//GEN-LAST:event_plus1BActionPerformed
 
     private void minus1BActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_minus1BActionPerformed
@@ -4200,22 +4469,23 @@ int selectedOption2 = JOptionPane.showConfirmDialog(null,
          generalAction(21,teamB_name);
             addLog(stage,timelabel.getText(),teamB_name,"-",21);
             LogAction tmp=new LogAction(teamB_name,(int)teamBstagescore.get(stage),(int)teamBstagescore.get(stage),i,score_teamA,score_teamB);
-           gameStackB.add(tmp);
+           gameListA.push(tmp);
     }//GEN-LAST:event_minus1BActionPerformed
 private void stagePlus(){
-            stageX.setValueAt(score_teamA, 0, stage);
-            stageX.setValueAt(score_teamB, 1, stage);
-      stage++;
-       stageLabel.setText(String.valueOf(stage));
-       if(stage>4){
-           stageX.addColumn("局 "+stage);
-           stageX.setValueAt(0, 0, stage);
-            stageX.setValueAt(0, 1, stage);
-       teamAstagescore.add(0);
-        teamBstagescore.add(0);
- 
-       }
-       t.suspend();
+        generalAction(30,teamA_name);
+           addLog(stage,timelabel.getText(),"-","-",30);
+           LogAction tmp=new LogAction(stage);
+           gameListA.push(tmp);
+            t.suspend();
+           resetTimer();
+}
+private void stageMinus()
+{
+    generalAction(31,teamB_name);
+     addLog(stage,timelabel.getText(),"-","-",31);
+                  LogAction tmp=new LogAction(stage);
+           gameListA.push(tmp);
+            t.suspend();
            resetTimer();
 }
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
@@ -4229,7 +4499,16 @@ if (selectedOption == JOptionPane.YES_OPTION) {
 }
    
     }//GEN-LAST:event_jButton2ActionPerformed
-
+ private void addSecActionPerformed(java.awt.event.ActionEvent evt) {                                         
+        // TODO add your handling code here:
+     addSec();
+   
+    }
+ private void minusSecActionPerformed(java.awt.event.ActionEvent evt) {                                         
+        // TODO add your handling code here:
+     minusSec();
+   
+    }
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         // TODO add your handling code here:
         if(stage==1)return;
@@ -4238,9 +4517,8 @@ if (selectedOption == JOptionPane.YES_OPTION) {
                                   "Choose", 
                                   JOptionPane.YES_NO_OPTION); 
 if (selectedOption == JOptionPane.YES_OPTION) {
-     stage--;
-       stageLabel.setText(String.valueOf(stage));
-       resetTimer();
+      
+       stageMinus();
 }
            
     }//GEN-LAST:event_jButton3ActionPerformed
@@ -4402,7 +4680,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneA.setText("#"+firstTeamA[0].getPlayerNum()+" "+firstTeamA[0].getPlayerName());
     addLog(stage,timelabel.getText(),teamA_name,savedName+"<->"+firstTeamA[0].getPlayerNum()+" "+firstTeamA[0].getPlayerName(),25);
     LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4426,7 +4704,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneB.setText("#"+firstTeamB[0].getPlayerSelectNum()+" "+firstTeamB[0].getPlayerName()+" "+firstTeamB[0].getPlayerNum());
      addLog(stage,timelabel.getText(),teamB_name,savedName+"<->"+firstTeamB[0].getPlayerNum()+" "+firstTeamB[0].getPlayerName(),25);
         LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4449,7 +4727,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneB2.setText("#"+firstTeamB[2].getPlayerSelectNum()+" "+firstTeamB[2].getPlayerName()+" "+firstTeamB[2].getPlayerNum());
      addLog(stage,timelabel.getText(),teamB_name,savedName+"<->"+firstTeamB[2].getPlayerNum()+" "+firstTeamB[2].getPlayerName(),25);
         LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }        // TODO add your handling code here:
@@ -4472,7 +4750,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneB4.setText("#"+firstTeamB[4].getPlayerSelectNum()+" "+firstTeamB[4].getPlayerName()+" "+firstTeamB[4].getPlayerNum());
      addLog(stage,timelabel.getText(),teamB_name,savedName+"<->"+firstTeamB[4].getPlayerNum()+" "+firstTeamB[4].getPlayerName(),25);
         LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }        // TODO add your handling code here:
@@ -4495,7 +4773,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneA1.setText("#"+firstTeamA[1].getPlayerSelectNum()+" "+firstTeamA[1].getPlayerName()+" "+firstTeamA[1].getPlayerNum());
        addLog(stage,timelabel.getText(),teamA_name,savedName+"<->"+firstTeamA[1].getPlayerNum()+" "+firstTeamA[1].getPlayerName(),25);
           LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4518,7 +4796,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneA2.setText("#"+firstTeamA[2].getPlayerSelectNum()+" "+firstTeamA[2].getPlayerName()+" "+firstTeamA[2].getPlayerNum());
        addLog(stage,timelabel.getText(),teamA_name,savedName+"<->"+firstTeamA[2].getPlayerNum()+" "+firstTeamA[2].getPlayerName(),25);
           LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4541,7 +4819,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneA3.setText("#"+firstTeamA[3].getPlayerSelectNum()+" "+firstTeamA[3].getPlayerName()+" "+firstTeamA[3].getPlayerNum());
        addLog(stage,timelabel.getText(),teamA_name,savedName+"<->"+firstTeamA[3].getPlayerNum()+" "+firstTeamA[3].getPlayerName(),25);
           LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4564,7 +4842,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneA4.setText("#"+firstTeamA[4].getPlayerSelectNum()+" "+firstTeamA[4].getPlayerName()+" "+firstTeamA[4].getPlayerNum());
            addLog(stage,timelabel.getText(),teamA_name,savedName+"<->"+firstTeamA[4].getPlayerNum()+" "+firstTeamA[4].getPlayerName(),25);
               LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4588,7 +4866,7 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneB1.setText("#"+firstTeamB[1].getPlayerSelectNum()+" "+firstTeamB[1].getPlayerName()+" "+firstTeamB[1].getPlayerNum());
      addLog(stage,timelabel.getText(),teamB_name,savedName+"<->"+firstTeamB[1].getPlayerNum()+" "+firstTeamB[1].getPlayerName(),25);
         LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }
@@ -4611,11 +4889,12 @@ if (result == JOptionPane.OK_OPTION) {
     playerOneB3.setText("#"+firstTeamB[3].getPlayerSelectNum()+" "+firstTeamB[3].getPlayerName()+" "+firstTeamB[3].getPlayerNum());
      addLog(stage,timelabel.getText(),teamB_name,savedName+"<->"+firstTeamB[3].getPlayerNum()+" "+firstTeamB[3].getPlayerName(),25);
         LogAction e=new LogAction();
-    gameStack.add(e);
+    gameListA.add(e);
 } else {
     System.out.println("User canceled / closed the dialog, result = " + result);
 }        // TODO add your handling code here:
     }//GEN-LAST:event_subB4ActionPerformed
+
 
     private void teamAPlayer1MousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_teamAPlayer1MousePressed
         // TODO add your handling code here:
@@ -5032,6 +5311,8 @@ if (result == JOptionPane.OK_OPTION) {
               private javax.swing.JButton optionsx;
               private javax.swing.JButton addMin;
                private javax.swing.JButton minusMin;
+             private javax.swing.JButton addSec;
+             private javax.swing.JButton minusSec;
     private void resetOption()
     {
         options=-1;
@@ -5140,7 +5421,7 @@ if (result == JOptionPane.OK_OPTION) {
     private void minusMT()
     {
          if(min>=0) {
-  
+    
  
     nstr=nstr.substring(0,nstr.length()-2);
     nstr+=":"+minsec/100;
@@ -5151,7 +5432,8 @@ if (result == JOptionPane.OK_OPTION) {
         sec--;
         minsec=900;
            nstr="";
-            nstr+=min;
+           if(min<10)
+            nstr+="0"+min;
             nstr+=":"+sec;
             nstr+=":"+minsec/100;
             
@@ -5159,6 +5441,59 @@ if (result == JOptionPane.OK_OPTION) {
     minsec-=100;
   
     System.out.println(nstr);
+    displayTimer();
+        }
+    }
+     private void addSec()
+    {
+          if(min<=9){
+            sec++;
+
+            nstr="";
+            if(sec>59)
+            {
+            min++;
+            sec=0;
+             if(min==10)
+            {
+                minsec=0;
+            }
+            }
+
+            if(min<10)
+            nstr+="0"+min;
+            else
+                nstr+=min;
+            if(sec<10)
+            nstr+=":0"+sec;
+            else
+                nstr+=":"+sec;
+            nstr+=":"+minsec/100;
+            
+            displayTimer();
+            
+        }
+    }
+      private void minusSec()
+    {
+         if(min>=0) {
+    sec--;
+    nstr="";
+    if(sec<0)
+    {
+        min--;
+        sec=59;
+    }
+                if(min<10)
+            nstr+="0"+min;
+            else
+                nstr+=min;
+            if(sec<10)
+            nstr+=":0"+sec;
+            else
+                nstr+=":"+sec;
+            nstr+=":"+minsec/100;
+    
     displayTimer();
         }
     }

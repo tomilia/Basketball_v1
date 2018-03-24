@@ -1,6 +1,6 @@
-
 import java.awt.List;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  * @author tommylee
  */
 public class DBConnection{
-private static String dbURL = "jdbc:derby://localhost:1527/Season;user=administrator;password=administrator";
+private static String dbURL = "jdbc:derby://58.176.222.168:1527/Season;user=administrator;password=administrator";
 private static String tableName = "SEASON";
 private static String teamTable="TEAM";
 private static String updateStat="insert into STAT  (TWO_POINT_IN," +
@@ -63,7 +63,19 @@ private static String updateStat="insert into STAT  (TWO_POINT_IN," +
         }
         catch (Exception except)
         {
-            except.printStackTrace();
+            try{
+            conn = DriverManager.getConnection("jdbc:derby:season;ifexists=true;");
+            }
+            catch(Exception e)
+            {
+                conn = DriverManager.getConnection("jdbc:derby:season;create=true;");
+            }
+         DatabaseMetaData dbmd = conn.getMetaData();
+
+             conn.prepareStatement("CREATE TABLE SEASON (SEASON_ID INT PRIMARY KEY,SEASON_NAME VARCHAR(128));");
+             
+         
+      
         }
        
     }
@@ -71,7 +83,7 @@ public long insertSeason(String season_name)
     {
         try
         {
-
+conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("insert into SEASON (SEASON_NAME) values (?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -96,6 +108,7 @@ public long insertTeam(String team_name,long season_id)
     {
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("insert into TEAM (TEAM_NAME,SEASON_ID) values (?,?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -122,6 +135,7 @@ public long insertPlayer(PlayerStat temp,long team_id)
     {
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("insert into PLAYERS (PLAYER_NAME,PLAYER_NUM,PLAYER_FIRST_TEAM,TEAM_ID) values (?,?,?,?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -150,7 +164,7 @@ public Map<Integer,String> selection()
                Map<Integer,String> listSeason=new HashMap<Integer,String>();
         try
         {
-
+conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
             ResultSet results = stmt.executeQuery("select * from " + tableName);
             ResultSetMetaData rsmd = results.getMetaData();
@@ -182,6 +196,7 @@ public Map<Integer,String> selection()
      Map<Integer,String> map = new HashMap<Integer,String>();
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("SELECT TEAM_ID,TEAM_NAME FROM TEAM WHERE SEASON_ID=(?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -222,6 +237,7 @@ public java.util.List<PlayerStat> getPlayer(Object team_name,int season_id) {
          java.util.List<PlayerStat> listPlayer=new ArrayList<PlayerStat>();
      try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("select PLAYERS.PLAYER_NUM,PLAYERS.PLAYER_NAME,PLAYERS.PLAYER_FIRST_TEAM,TEAM.TEAM_NAME,PLAYERS.PLAYER_ID"
                             + " from PLAYERS JOIN TEAM ON PLAYERS.TEAM_ID=TEAM.TEAM_ID JOIN SEASON ON SEASON.SEASON_ID = TEAM.SEASON_ID WHERE TEAM.TEAM_NAME=(?) AND "
@@ -268,6 +284,7 @@ int getSeasonIDbyname(Object selectedItem)
         int required_id;
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("SELECT * FROM SEASON WHERE SEASON_NAME=(?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -297,6 +314,7 @@ int getSeasonIDbyname(Object selectedItem)
     {
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("SELECT TEAM_NAME FROM TEAM WHERE TEAM_ID=(?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -326,6 +344,7 @@ int getSeasonIDbyname(Object selectedItem)
         int required_id;
         try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("SELECT * FROM TEAM WHERE TEAM_NAME=(?) AND SEASON_ID=(?)",
                                       Statement.RETURN_GENERATED_KEYS);
@@ -354,9 +373,11 @@ int getSeasonIDbyname(Object selectedItem)
          //To change body of generated methods, choose Tools | Templates.
     }
 
-    void insertStat(PlayerStat player,String team_Aname,String team_Bname) {
+
+    int insertStat(PlayerStat player,String team_Aname,String team_Bname) {
        try
         {
+            conn = DriverManager.getConnection(dbURL); 
             stmt = conn.createStatement();
                 SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd");
             Date now = new Date();
@@ -372,23 +393,23 @@ int getSeasonIDbyname(Object selectedItem)
                     statement.setString(21,strDate);
                     
            statement.execute();
-            System.out.println("\n--------x-----------------------------------------");
-
    stmt.close();
-   return ;
         }
         catch (SQLException sqlExcept)
         {
-            sqlExcept.printStackTrace();
+             sqlExcept.printStackTrace();
+            return -1;
         }
-        return;
+        return 1;
     }
 
     ResultSet getStatByPlayerId(int player_id) {
          try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
-                    PreparedStatement statement = conn.prepareStatement("SELECT * FROM STAT WHERE PLAYER_ID=(?) ",
+                    PreparedStatement statement = conn.prepareStatement("SELECT DISTINCT STAT.TWO_POINT_IN,STAT.TWO_POINT_TOTAL,STAT.THREE_POINT_IN,STAT.THREE_POINT_TOTAL,STAT.FREE_POINT_IN,STAT.FREE_POINT_TOTAL,STAT.ATKBASKET,STAT.DEFBASKET,STAT.BLOCKSHOT,STAT.FAST_ATK_SUCCESS,STAT.FAST_ATK_FAIL,STAT.BLOCKSHOT,STAT.ASSIST,STAT.STEAL,STAT.TURNOVER,STAT.ATKFOUL,STAT.DEFFOUL,STAT.TECHFOUL,STAT.TEAM_A,STAT.TEAM_B,STAT.PLAYER_ID,CAST(STAT.\"TIME\" AS VARCHAR(128)) FROM STAT \n" +
+" WHERE PLAYER_ID=(?) ",
                                       Statement.RETURN_GENERATED_KEYS);
              statement.setInt(1, player_id);
             System.out.println("\n--------x-----------------------------------------");
@@ -413,6 +434,7 @@ int getSeasonIDbyname(Object selectedItem)
        Object[] result=new Object[21];
           try
         {
+            conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
                     PreparedStatement statement = conn.prepareStatement("SELECT PLAYERS.PLAYER_NAME,SUM(TWO_POINT_IN*2+THREE_POINT_IN*3+FREE_POINT_IN*1), SUM(TWO_POINT_IN),SUM(TWO_POINT_TOTAL)," +
 "SUM(THREE_POINT_IN),SUM(THREE_POINT_TOTAL),SUM(FREE_POINT_IN),SUM(FREE_POINT_TOTAL)," +
@@ -513,6 +535,7 @@ return result;
               try
         {
              deleteAllTeam(seasonId);
+             conn = DriverManager.getConnection(dbURL);
             stmt = conn.createStatement();
              PreparedStatement statement = conn.prepareStatement("DELETE FROM SEASON WHERE SEASON_ID=(?) ",
                                       Statement.RETURN_GENERATED_KEYS);

@@ -166,6 +166,71 @@ public class PlayerStat {
       }
       statistics[17]=statistics[0]*2+statistics[2]*3+statistics[4];
     }
+    public void setReverseOptions(int option){
+      switch(option)
+      {
+        case 0:
+        statistics[0]--;
+        statistics[1]--;
+        break;
+                case 1:
+        statistics[1]--;
+        break;
+                case 2:
+        statistics[2]--;
+        statistics[3]--;
+        break;
+                case 3:
+        statistics[3]--;
+        break;
+                case 4:
+        statistics[4]--;
+        statistics[5]--;
+        break;
+                case 5:
+        statistics[5]--;
+        break;
+                case 6:
+        statistics[6]--;
+        break;
+                case 7:
+        statistics[7]--;
+        break;
+                case 8:
+        statistics[8]--;
+        statistics[9]--;
+        break;
+           case 9:
+        statistics[9]--;
+        break;
+           case 10:
+        statistics[10]--;
+        break;
+           case 11:
+        statistics[11]--;
+        break;
+           case 12:
+        statistics[12]--;
+        break;
+           case 13:
+        statistics[13]--;
+        break;
+           case 14:
+        statistics[14]--;
+   
+        break;
+           case 15:
+        statistics[15]--;
+   
+        break;
+           case 16:
+        statistics[16]--;
+     
+        break;
+      
+      }
+      statistics[17]=statistics[0]*2+statistics[2]*3+statistics[4];
+    }
     public int getOptions(int options)
     {
         return statistics[options];

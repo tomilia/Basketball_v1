@@ -41,10 +41,10 @@ public class DatabaseFrame extends javax.swing.JFrame {
     byte[] BOM_UTF8 = { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
     List<PlayerStat> playerx=new ArrayList<>();
           String col[] = {"Name","No","PTS", "2 Points FG", "FGA","%","3 Points FG","FGA","%","Free throw FG"
-             ,"FGA","%","OR","DR","TR","Fast Break FB","FBA","BS","AS","ST","TO","F"};
+             ,"FGA","%","OR","DR","TR","BS","AS","ST","TO","F","EFF"};
           DefaultTableModel tablemodel = new DefaultTableModel(col, 0){
             boolean[] canEdit = new boolean [] {
-                false, false, false, false,false, false, false, false,false, false, false, false,false, false, false, false,false, false, false, false,false, false, false, false
+                false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false
             };
             
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -85,11 +85,10 @@ public class DatabaseFrame extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
-        player = new javax.swing.JComboBox<>();
-        jLabel3 = new javax.swing.JLabel();
         seasonstat = new javax.swing.JButton();
         playerStat = new javax.swing.JButton();
         back = new javax.swing.JButton();
+        summary = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -127,17 +126,6 @@ public class DatabaseFrame extends javax.swing.JFrame {
 
         getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 241, 1310, 270));
 
-        player.setModel(playmodel);
-        player.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                playerActionPerformed(evt);
-            }
-        });
-        getContentPane().add(player, new org.netbeans.lib.awtextra.AbsoluteConstraints(450, 160, 281, -1));
-
-        jLabel3.setText("球員：");
-        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(390, 160, -1, 30));
-
         seasonstat.setText("匯出賽季數據");
         seasonstat.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -152,7 +140,7 @@ public class DatabaseFrame extends javax.swing.JFrame {
                 playerStatActionPerformed(evt);
             }
         });
-        getContentPane().add(playerStat, new org.netbeans.lib.awtextra.AbsoluteConstraints(740, 150, 150, 40));
+        getContentPane().add(playerStat, new org.netbeans.lib.awtextra.AbsoluteConstraints(390, 170, 150, 40));
 
         back.setIcon(new javax.swing.ImageIcon(getClass().getResource("/home-icon-silhouette.png"))); // NOI18N
         back.addActionListener(new java.awt.event.ActionListener() {
@@ -161,6 +149,14 @@ public class DatabaseFrame extends javax.swing.JFrame {
             }
         });
         getContentPane().add(back, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 20, 60, 40));
+
+        summary.setText("賽季總結表");
+        summary.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                summaryActionPerformed(evt);
+            }
+        });
+        getContentPane().add(summary, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 20, 130, 40));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -179,48 +175,70 @@ public class DatabaseFrame extends javax.swing.JFrame {
 
     private void teamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_teamActionPerformed
         // TODO add your handling code here:
+            jTable1.removeAll();
+            tablemodel.setRowCount(0);
         int team_id=db.getteamIDbyname(team.getSelectedItem(),seasonId);
         playerx=db.getPlayer(team.getSelectedItem(),seasonId);
             Object[] values= new Object[playerx.size()];
             for(int a=0;a<playerx.size();a++)
             {
+                
                 values[a]=playerx.get(a).getPlayerName();
             }
-              playmodel=new DefaultComboBoxModel(values);
-              player.setModel(playmodel);
-              try{
-              player.setSelectedIndex(0);
-              }catch(Exception e){
-                  
-              }
-    }//GEN-LAST:event_teamActionPerformed
-
-    private void playerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_playerActionPerformed
-        // TODO add your handling code here:
-        int player_id=playerx.get(player.getSelectedIndex()).getplayerId();
-       ResultSet rest= db.getStatByPlayerId(player_id);
-      jTable1.removeAll();
-
-      tablemodel.setRowCount(0);
-        try {
-            while(rest.next())
+             for(int a=0;a<playerx.size();a++)
             {
-                  double percent2point,percent3point,freethrowpoint;
+            try {
+                ResultSet rest= db.getStatByPlayerId(playerx.get(a).getplayerId());
+                  int []temp=new int[17];
+                  int eff=0; for(int z=0;z<17;z++)temp[z]=0;
+                     while(rest.next())
+            {
+                 
+   
+                  
+            eff=(rest.getInt(1)*2+rest.getInt(3)*3+rest.getInt(5)*1)+rest.getInt(7)+rest.getInt(8)+rest.getInt(11)+rest.getInt(12)+rest.getInt(13)-(rest.getInt(2)-rest.getInt(1))-(rest.getInt(4)-rest.getInt(3))-(rest.getInt(6)-rest.getInt(5))-rest.getInt(14);
+                
+        temp [0]+= rest.getInt(1)*2+rest.getInt(3)*3+rest.getInt(5)*1;
+        temp [1]+= rest.getInt(1);
+        temp [2]+= rest.getInt(2);
+        //percent 100 2point
+        temp [3]+= rest.getInt(3);
+        temp [4]+= rest.getInt(4);
+        //percent 100 3point
+        temp [5]+= rest.getInt(5);
+        temp [6]+= rest.getInt(6);
+        //free throw
+        temp [7]+= rest.getInt(7);
+        temp [8]+= rest.getInt(8);
+        //robound total
+        temp [9]+=rest.getInt(11);
+        temp [10]+=rest.getInt(12);
+        temp [11]+=rest.getInt(13);
+        temp [12]+=rest.getInt(14);
+        temp [13]+=rest.getInt(15);
+        temp[14]+=rest.getInt(16);
+        temp[15]+=+rest.getInt(17);
+        temp [16]+=eff;
 
-                  percent2point=(rest.getInt(2)==0)?0:((double)rest.getInt(1))/(int)rest.getInt(2);
-                  percent3point=(rest.getInt(4)==0)?0:((double)rest.getInt(3))/(int)rest.getInt(4);
-                  freethrowpoint=(rest.getInt(6)==0)?0:((double)rest.getInt(5))/(int)rest.getInt(6);
-                tablemodel.addRow(new Object[]{rest.getString(18)+" v "+rest.getString(19),rest.getString(21),
-                    rest.getInt(1)*2+rest.getInt(3)*3+rest.getInt(5)*1,rest.getInt(1),rest.getInt(2),percent2point*100,
-                    rest.getInt(3),rest.getInt(4),percent3point*100,rest.getInt(5),rest.getInt(6),freethrowpoint*100,
-                    rest.getInt(7),rest.getInt(8),rest.getInt(7)+rest.getInt(8),rest.getInt(9),rest.getInt(9)+rest.getInt(10),rest.getInt(11),rest.getInt(12),
-                    rest.getInt(13),rest.getInt(14),rest.getInt(15)+rest.getInt(16)+rest.getInt(17)});
+               
             }
-        } catch (SQLException ex) {
-            Logger.getLogger(DatabaseFrame.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        calculateTotal();
-    }//GEN-LAST:event_playerActionPerformed
+                      double percent2point,percent3point,freethrowpoint;
+                   percent2point=(temp[2]==0)?0:((double)temp[1])/(int)temp[2];
+                  percent3point=(temp[4]==0)?0:((double)temp[3])/(int)temp[4];
+                  freethrowpoint=(temp[6]==0)?0:((double)temp[5])/(int)temp[6];           
+          tablemodel.addRow(new Object[]{playerx.get(a).getPlayerName(),playerx.get(a).getPlayerNum(),
+                    temp[0],temp[1],temp[2],percent2point*100,
+                    temp[3],temp[4],percent3point*100,temp[5],temp[6],freethrowpoint*100,
+                    temp[7],temp [8],temp [7]+temp [8],temp [9],temp [10],
+                    temp [11],temp [12],temp [13]+temp [14]+temp [15],temp[16]});
+                     
+                     
+            } catch (SQLException ex) {
+                Logger.getLogger(DatabaseFrame.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            }
+
+    }//GEN-LAST:event_teamActionPerformed
 
     private void seasonstatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_seasonstatActionPerformed
         // TODO add your handling code here:
@@ -265,13 +283,27 @@ public class DatabaseFrame extends javax.swing.JFrame {
                 bw.write(p.getPlayerNum()+",");
                for(int a=1;a<retrieveStat.length;a++)
                {
-                
+                if(a==4||a==7||a==10)
+                {
+                    if((int)retrieveStat[a-1]!=0){
+                    String temp=retrieveStat[a-2].toString();
+                    
+                    double z=Double.parseDouble(temp);
+                        System.out.println("counts:"+z+" "+(int)retrieveStat[a-1]);
+                    bw.write(((double)z/(int)retrieveStat[a-1])*100+"%"+",");
+                    }
+                    
+                    bw.write("0.00%"+",");
+                }
+                else
                  bw.write(retrieveStat[a]+",");
                  if(a==4||a==7||a==10)
                  {
+                     
                      if((int)total[a-1]!=0){
                             String temp=total[a-2].toString();
                     double z=Double.parseDouble(temp);  
+                
                       total[a]=((double)z/(int)total[a-1])*100+"%";
                      }
                      else total[a]="0.00%";
@@ -281,6 +313,7 @@ public class DatabaseFrame extends javax.swing.JFrame {
                }
                bw.write("\n");
             }
+            
             bw.write("\n");
             for(Object j:total)bw.write(j+",");
             bw.write("\n\n");
@@ -302,7 +335,7 @@ public class DatabaseFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_seasonstatActionPerformed
 
     private void playerStatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_playerStatActionPerformed
-          if(player.getSelectedIndex()!=-1)
+      /*    if(player.getSelectedIndex()!=-1)
           {
          
             JFileChooser chooser = new JFileChooser();
@@ -358,6 +391,7 @@ public class DatabaseFrame extends javax.swing.JFrame {
            }
             }
           }
+        */
     }//GEN-LAST:event_playerStatActionPerformed
 
     private void backActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backActionPerformed
@@ -371,6 +405,11 @@ public class DatabaseFrame extends javax.swing.JFrame {
             Logger.getLogger(DatabaseFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_backActionPerformed
+
+    private void summaryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_summaryActionPerformed
+        // TODO add your handling code here:
+        
+    }//GEN-LAST:event_summaryActionPerformed
     private void calculateTotal()
     {
         int []temp=new int[17];
@@ -386,25 +425,43 @@ public class DatabaseFrame extends javax.swing.JFrame {
         temp [6]+= Integer.parseInt( jTable1.getValueAt(i, 10)+"");
         temp [7]+= Integer.parseInt( jTable1.getValueAt(i, 12)+"");
         temp [8]+= Integer.parseInt( jTable1.getValueAt(i, 13)+"");
-        temp [9]+= Integer.parseInt( jTable1.getValueAt(i, 14)+"");
+        temp [9]+=Integer.parseInt( jTable1.getValueAt(i, 14)+"");
         temp [10]+=Integer.parseInt( jTable1.getValueAt(i, 15)+"");
         temp [11]+=Integer.parseInt( jTable1.getValueAt(i, 16)+"");
         temp [12]+=Integer.parseInt( jTable1.getValueAt(i, 17)+"");
         temp [13]+=Integer.parseInt( jTable1.getValueAt(i, 18)+"");
         temp [14]+=Integer.parseInt( jTable1.getValueAt(i, 19)+"");
-        temp [15]+=Integer.parseInt( jTable1.getValueAt(i, 20)+"");
-        temp [16]+=Integer.parseInt( jTable1.getValueAt(i, 21)+"");
 
 
     }
                    double percent2point,percent3point,freethrowpoint;
-
+                  int eff=(temp[0])+temp[9]+temp[10]+temp[11]+temp[12]-(temp[2]-temp[1])-(temp[4]-temp[3])-(temp[6]-temp[5])-temp[13];
+   
                   percent2point=(temp[2]==0)?0:((double)temp[1])/(int)temp[2];
                   percent3point=(temp[4]==0)?0:((double)temp[3])/(int)temp[4];
                   freethrowpoint=(temp[6]==0)?0:((double)temp[5])/(int)temp[6];
-             
+              /* 
+   0 int twopointin=0;
+   1 int twopointshoottime=0;
+   2 int threepointin=0;
+   3 int threepointshoottime=0;
+   4 int freepointin=0;
+   5 int freepointshoottime=0*;
+   6 int attackbasket=0;
+   7 int deferencebasket=0;
+   8 int fastattacksuccess=0;
+   9 int fastattackfailure=0;  
+  10 int blockshot=0;
+  11 int assist=0;
+  12 int steal=0;
+  13 int turnover=0;
+  14 int atkfoul=0;
+  15 int deffoul=0;
+  16 int techfoul=0;
+  17 int totalscore=0;
+*/
      tablemodel.insertRow(0,new Object[]{"Total","",temp[0],temp[1],temp[2],100*percent2point,temp[3],temp[4],100*percent3point,
-     temp[5],temp[6],100*freethrowpoint,temp[7],temp[8],temp[9],temp[10],temp[11],temp[12],temp[13],temp[14],temp[15],temp[16]});       
+     temp[5],temp[6],100*freethrowpoint,temp[7],temp[8],temp[9],temp[10],temp[11],temp[12],temp[13],temp[14],eff});       
      
     }
     /**
@@ -416,13 +473,12 @@ public class DatabaseFrame extends javax.swing.JFrame {
     private javax.swing.JButton back;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JComboBox<String> player;
     private javax.swing.JButton playerStat;
     private javax.swing.JComboBox<String> season;
     private javax.swing.JButton seasonstat;
+    private javax.swing.JButton summary;
     private javax.swing.JComboBox<String> team;
     // End of variables declaration//GEN-END:variables
 }
